@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer Glowing Gold Border -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="url(#goldGrad)" stroke-width="8" opacity="0.8" />
+
+  <!-- Golden Lottery Balls & Scanner Frame -->
+  <g filter="url(#shadow)">
+    <!-- QR Corner Crosshairs -->
+    <path d="M 120 160 L 120 120 L 160 120" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M 392 160 L 392 120 L 352 120" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M 120 352 L 120 392 L 160 392" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M 392 352 L 392 392 L 352 392" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- Central Glowing Ticket Shield -->
+    <circle cx="256" cy="256" r="100" fill="url(#goldGrad)" />
+    
+    <!-- Inner emblem -->
+    <circle cx="256" cy="256" r="88" fill="#0f172a" />
+    
+    <!-- Central Text LK -->
+    <text x="256" y="278" font-family="system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" text-anchor="middle" fill="url(#goldGrad)" letter-spacing="2">LK</text>
+
+    <!-- Star / Sparkle Accents -->
+    <path d="M 256 126 L 262 142 L 278 144 L 265 155 L 269 171 L 256 162 L 243 171 L 247 155 L 234 144 L 250 142 Z" fill="#fbbf24" />
+    <path d="M 256 340 L 262 356 L 278 358 L 265 369 L 269 385 L 256 376 L 243 385 L 247 369 L 234 358 L 250 356 Z" fill="#fbbf24" />
+  </g>
+</svg>

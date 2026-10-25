@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "LK Lottery Master - Sri Lanka",
+  "short_name": "LKLottery",
+  "description": "Sri Lanka's premier DLB & NLB lottery results checker with instant QR & AI camera scanning, 6-month historical database, and live voice announcements.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
