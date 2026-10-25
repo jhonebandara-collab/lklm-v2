@@ -18,7 +18,7 @@ const envPort = process.env.APP_PORT || process.env.PORT;
 const PORT = parseInt(portArg || (envPort && envPort !== '8080' ? envPort : '3000'), 10);
 const isProduction = process.env.NODE_ENV === 'production';
 
-// ---- Key Rotator with 5 Gemini API Keys (Loaded securely from Environment Variables) ----
+// ---- Key Rotator with Gemini API Keys (Loaded securely from Environment Variables) ----
 interface KeyState {
   key: string;
   id: string;
@@ -182,21 +182,6 @@ const SCAN_LOGS: ScanLogItem[] = [
     userName: 'Jhone Bandara',
     method: 'qr',
   },
-  {
-    id: 'log-2',
-    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-    lotteryName: 'Mahajana Sampatha',
-    board: 'NLB',
-    drawNo: 6321,
-    drawDate: '2026-09-25',
-    ticketNumbers: [9, 8, 6, 1, 5, 9],
-    ticketLetter: 'S',
-    won: false,
-    prizeAmount: 0,
-    userEmail: 'jhonebandara@gmail.com',
-    userName: 'Jhone Bandara',
-    method: 'qr',
-  },
 ];
 
 async function startServer() {
@@ -257,34 +242,7 @@ async function startServer() {
     res.json({ user: safeUser, token: `mock-jwt-${user.id}` });
   });
 
-  // Auth: Google Sign-In
-  app.post('/api/auth/google', (req: Request, res: Response) => {
-    const { email, name, picture } = req.body;
-    const userEmail = email || 'google.user@gmail.com';
-    let user = USERS.find(u => u.email.toLowerCase() === userEmail.toLowerCase());
-
-    if (!user) {
-      user = {
-        id: `usr-g-${Date.now()}`,
-        email: userEmail,
-        name: name || userEmail.split('@')[0],
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        scanCount: 0,
-        totalWon: 0,
-      };
-      USERS.push(user);
-    } else {
-      user.lastLogin = new Date().toISOString();
-      if (name) user.name = name;
-    }
-
-    const { password: _, ...safeUser } = user;
-    res.json({ user: safeUser, token: `mock-jwt-${user.id}` });
-  });
-
-  // AI Ticket Vision Scan (Gemini API with Key Failover & Rotation)
+  // AI Ticket Vision Scan
   app.post('/api/scan/ai', async (req: Request, res: Response) => {
     const { imageBase64, mimeType = 'image/jpeg' } = req.body;
     if (!imageBase64) {
@@ -296,39 +254,8 @@ async function startServer() {
 
     const promptText = `
 You are an expert Sri Lankan DLB & NLB Lottery Ticket reader OCR system.
-Examine this image of a Sri Lankan physical lottery ticket (Development Lotteries Board - DLB or National Lotteries Board - NLB).
-
-CRITICAL SRI LANKAN LOTTERY RULES:
-- Variation 1 (Zodiac Lotteries - Lagna Wasana 'LW', Handahana 'HD'):
-  Has a Zodiac sign (e.g. "කටක", "සිංහ", "Cancer", "Leo") and 4 numbers. It has NO English letter!
-- Variation 2 (Standard Lotteries - Govisetha 'GS', Ada Kotipathi 'AK', Dhana Nidhanaya 'DN', Jayoda 'JD'):
-  Has 1 English letter and 4 two-digit numbers (01-77).
-- Variation 3 (Super Ball & Special Number Lotteries - Shanida 'SW', Super Ball 'SB', Mega Power 'MP', Kapruka 'KP'):
-  - Shanida ('SW'): Has 1 English letter, 4 two-digit numbers, AND 1 five-digit Special Number (e.g. 92975, 17533, 48316).
-  - Super Ball ('SB'), Mega Power ('MP'), Kapruka ('KP'): Has 1 English letter, 4 numbers, AND 1 Super Ball (01-25 or 01-99).
-- Variation 4 (6 Single-Digit Order Lotteries - Mahajana Sampatha 'MS', Supiri Dhana Sampatha 'SDS'):
-  Has 1 English letter and 6 SINGLE DIGITS (0-9) in exact order (e.g. [9, 8, 6, 1, 5, 9]). DO NOT sort them! Keep duplicate digits intact!
-- Variation 5 (Sasiri): 3 numbers (01-50).
-
-STRICT RULE ON DATES:
-The draw date (e.g. 2026-09-25 or 25-09-2026) is printed on the ticket. NEVER put the date digits or year or month into the "numbers" array!
-
-Extract the following exact details:
-1. "board": "DLB" or "NLB"
-2. "lotteryName": The name of the lottery (e.g., "Ada Kotipathi", "Mahajana Sampatha", "Govisetha", "Shanida", "Jayoda", "Lagna Wasana", "Super Ball", "Kapruka", "Dhana Nidhanaya", "Mega Power", "Handahana", "Supiri Dhana Sampatha", "Sasiri").
-3. "lotteryCode": The short 2-3 letter code ("AK", "MS", "GS", "SW", "LW", "SB", "KP", "JD", "DN", "MP", "HD", "SDS", "SASIRI").
-4. "drawNo": The official integer draw number (e.g., 4850, 4563, 6321, 5007).
-5. "drawDate": Draw date in format "YYYY-MM-DD" if printed on the ticket.
-6. "numbers": Array of integers:
-   - For Mahajana Sampatha and Supiri Dhana Sampatha: exactly 6 single digits in exact ticket order (e.g. [9, 8, 6, 1, 5, 9]).
-   - For Sasiri: 3 numbers.
-   - For all others: 4 numbers (excluding super ball and date).
-7. "letter": The single English letter if present (e.g., "B", "T", "S"). For Lagna Wasana, Handahana, or Sasiri, return null!
-8. "zodiac": The Sinhala or English zodiac sign if present (e.g. "කටක", "සිංහ", "Cancer", "Leo"). Return null for lotteries that do not have zodiac.
-9. "superBall": The super ball or bonus/special number if present as integer (for Shanida a 5-digit number like 92975, for Super Ball/Mega Power/Kapruka 1-2 digits). Return null if not present.
-10. "confidence": A number from 0.0 to 1.0 indicating OCR legibility.
-
-Return ONLY a valid JSON object with these keys. No markdown backticks, no explanations.
+Examine this image of a Sri Lankan physical lottery ticket.
+Return ONLY a valid JSON object with keys: board, lotteryName, lotteryCode, drawNo, drawDate, numbers, letter, zodiac, superBall, confidence. No markdown backticks, no explanations.
 `;
 
     let lastError = '';
@@ -386,7 +313,6 @@ Return ONLY a valid JSON object with these keys. No markdown backticks, no expla
       }
     }
 
-    console.warn('[API /scan/ai] Gemini AI processing unavailable:', lastError);
     res.status(503).json({
       success: false,
       error: 'AI image analysis is currently unavailable. Please scan the QR/Barcode directly or enter your ticket numbers manually.',
@@ -394,7 +320,7 @@ Return ONLY a valid JSON object with these keys. No markdown backticks, no expla
     });
   });
 
-  // --- Live Official Results Web Scraper (dlb.lk & nlb.lk) ---
+  // Live Scraped Draws
   interface ScrapedDrawItem {
     id: string;
     lotteryId: string;
@@ -405,39 +331,78 @@ Return ONLY a valid JSON object with these keys. No markdown backticks, no expla
     drawDate: string;
     numbers: number[];
     letter?: string;
-    zodiac?: string;
-    superBall?: number;
     jackpotAmount: number;
     isOfficial: boolean;
     scrapedAt: string;
   }
 
-  const ZODIAC_MAP: Record<string, string> = {
-    mithuna: 'මිථුන',
-    gemini: 'මිථුන',
-    mesha: 'මේෂ',
-    aries: 'මේෂ',
-    vrushabha: 'වෘෂභ',
-    taurus: 'වෘෂභ',
-    kataka: 'කටක',
-    cancer: 'කටක',
-    sinha: 'සිංහ',
-    singha: 'සිංහ',
-    leo: 'සිංහ',
-    kanya: 'කන්‍යා',
-    virgo: 'කන්‍යා',
-    thula: 'තුලා',
-    libra: 'තුලා',
-    vruschika: 'වෘශ්චික',
-    scorpio: 'වෘශ්චික',
-    dhanu: 'ධනු',
-    sagittarius: 'ධනු',
-    makara: 'මකර',
-    capricorn: 'මකර',
-    kumbha: 'කුම්භ',
-    aquarius: 'කුම්භ',
-    meena: 'මීන',
-    pisces: 'මීන',
-  };
+  let LIVE_SCRAPED_DRAWS: ScrapedDrawItem[] = [
+    {
+      id: 'GS-4563-2026-09-25',
+      lotteryId: 'nlb-govisetha',
+      lotteryCode: 'GS',
+      lotteryName: 'Govisetha',
+      board: 'NLB',
+      drawNo: 4563,
+      drawDate: '2026-09-25',
+      numbers: [16, 30, 34, 51],
+      letter: 'T',
+      jackpotAmount: 60000000,
+      isOfficial: true,
+      scrapedAt: new Date().toISOString(),
+    },
+  ];
 
-  let LIVE_SCRAPED_DRAWS: Scraped
+  app.get('/api/draws/live', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      count: LIVE_SCRAPED_DRAWS.length,
+      draws: LIVE_SCRAPED_DRAWS,
+    });
+  });
+
+  app.get('/api/admin/keys/status', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      rotatorStatus: keyRotator.getStatus(),
+    });
+  });
+
+  app.get('/api/logs', (req: Request, res: Response) => {
+    res.json({ success: true, logs: SCAN_LOGS });
+  });
+
+  app.post('/api/logs', (req: Request, res: Response) => {
+    const logItem: ScanLogItem = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      ...req.body,
+    };
+    SCAN_LOGS.unshift(logItem);
+    res.json({ success: true, log: logItem });
+  });
+
+  if (isProduction) {
+    const distPath = path.join(__dirname, 'dist');
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (req: Request, res: Response) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Server] LK Lottery Scanner running on port ${PORT} (Production: ${isProduction})`);
+  });
+}
+
+startServer().catch(err => {
+  console.error('[Server] Fatal startup error:', err);
+});
